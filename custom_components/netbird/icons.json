@@ -1,0 +1,47 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "connected": {
+        "default": "mdi:lan-connect",
+        "state": {
+          "off": "mdi:lan-disconnect"
+        }
+      },
+      "ssh_enabled": {
+        "default": "mdi:ssh"
+      },
+      "ephemeral": {
+        "default": "mdi:timer-sand"
+      },
+      "active": {
+        "default": "mdi:router-network",
+        "state": {
+          "off": "mdi:router-network-off"
+        }
+      }
+    },
+    "sensor": {
+      "ip": {
+        "default": "mdi:ip-network"
+      },
+      "accessible_peers_count": {
+        "default": "mdi:lan"
+      },
+      "destination": {
+        "default": "mdi:target"
+      },
+      "route_group": {
+        "default": "mdi:routes"
+      },
+      "metric": {
+        "default": "mdi:speedometer"
+      },
+      "resource_type": {
+        "default": "mdi:shape-outline"
+      },
+      "network_name": {
+        "default": "mdi:network-outline"
+      }
+    }
+  }
+}

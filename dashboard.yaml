@@ -1,0 +1,134 @@
+# NetBird dashboard for Home Assistant
+#
+# How to add this:
+#   Settings -> Dashboards -> "+ Add Dashboard" -> "New dashboard from scratch"
+#   -> open it -> three-dot menu (top right) -> "Edit dashboard"
+#   -> three-dot menu again -> "Edit in YAML" -> paste the content below
+#   (everything under "views:") and save.
+#
+# This view is fully dynamic: it discovers all peer / route / network
+# resource devices that belong to the netbird integration via the built-in
+# integration_entities() template helper, so it keeps working as peers are
+# added or removed - no manual entity_id list to maintain.
+#
+# It only uses core Home Assistant cards/templating (no HACS cards needed).
+# With a very large number of peers (dozens+) the template re-evaluates on
+# every related state change, which can get a bit heavy - if that becomes
+# noticeable, split the markdown card below into separate per-section cards.
+
+views:
+  - title: NetBird
+    path: netbird
+    icon: mdi:network
+    cards:
+      - type: markdown
+        title: NetBird
+        content: |-
+          {%- set ns = namespace(peers=[], routes=[], resources=[]) -%}
+          {%- for did in integration_entities('netbird') | map('device_id') | reject('none') | unique | list -%}
+          {%- set idents = device_attr(did, 'identifiers') -%}
+          {%- set dname = device_attr(did, 'name') or did -%}
+          {%- for ident in idents -%}
+          {%- if ident[1].startswith('peer:') -%}
+          {%- set ns.peers = ns.peers + [{'id': did, 'name': dname}] -%}
+          {%- elif ident[1].startswith('route:') -%}
+          {%- set ns.routes = ns.routes + [{'id': did, 'name': dname}] -%}
+          {%- elif ident[1].startswith('resource:') -%}
+          {%- set ns.resources = ns.resources + [{'id': did, 'name': dname}] -%}
+          {%- endif -%}
+          {%- endfor -%}
+          {%- endfor -%}
+          {%- set peer_list = ns.peers | sort(attribute='name') -%}
+          {%- set route_list = ns.routes | sort(attribute='name') -%}
+          {%- set resource_list = ns.resources | sort(attribute='name') -%}
+          {%- macro connectivity_count(device_list) -%}
+          {%- set c = namespace(on=0) -%}
+          {%- for device in device_list -%}
+          {%- for eid in device_entities(device.id) -%}
+          {%- if state_attr(eid, 'device_class') == 'connectivity' and is_state(eid, 'on') -%}
+          {%- set c.on = c.on + 1 -%}
+          {%- endif -%}
+          {%- endfor -%}
+          {%- endfor -%}
+          {{- c.on -}}
+          {%- endmacro -%}
+          {%- macro render_rows(device_list, show_ip=false) -%}
+          {%- for device in device_list -%}
+          {%- set dname = device.name -%}
+          {%- set status = namespace(id=none) -%}
+          {%- set problem = namespace(any=false) -%}
+          {%- set ip = namespace(value='—') -%}
+          {%- set parts = namespace(items=[]) -%}
+          {%- for eid in device_entities(device.id) -%}
+          {%- set dc = state_attr(eid, 'device_class') -%}
+          {%- if dc == 'connectivity' -%}
+          {%- set status.id = eid -%}
+          {%- else -%}
+          {%- if dc == 'problem' and is_state(eid, 'on') -%}
+          {%- set problem.any = true -%}
+          {%- endif -%}
+          {%- set fname = state_attr(eid, 'friendly_name') or eid -%}
+          {%- set label = fname.replace(dname + ' ', '', 1) if dname and fname.startswith(dname + ' ') else fname -%}
+          {%- set raw = states(eid) -%}
+          {%- if raw not in ['unknown', 'unavailable', ''] -%}
+          {%- if dc == 'timestamp' -%}
+          {%- set val = relative_time(as_datetime(raw)) + ' ago' -%}
+          {%- elif raw == 'on' -%}
+          {%- set val = '✅' -%}
+          {%- elif raw == 'off' -%}
+          {%- set val = '—' -%}
+          {%- else -%}
+          {%- set val = raw -%}
+          {%- endif -%}
+          {%- if show_ip and label == 'IP address' -%}
+          {%- set ip.value = val -%}
+          {%- else -%}
+          {%- set parts.items = parts.items + [label + ': ' + val] -%}
+          {%- endif -%}
+          {%- endif -%}
+          {%- endif -%}
+          {%- endfor -%}
+          {%- set status_icon = '🟢' if status.id and is_state(status.id, 'on') else ('🔴' if status.id else '⚪') -%}
+          {%- set warn = ' ⚠️' if problem.any else '' -%}
+          {%- if show_ip -%}
+          {{ '| ' + dname + warn + ' | ' + status_icon + ' | ' + ip.value + ' | ' + (parts.items | join(', ')) + ' |\n' }}
+          {%- else -%}
+          {{ '| ' + dname + warn + ' | ' + status_icon + ' | ' + (parts.items | join(', ')) + ' |\n' }}
+          {%- endif -%}
+          {%- endfor -%}
+          {%- endmacro -%}
+          ## Overview
+
+          **Peers:** {{ connectivity_count(peer_list) }}/{{ peer_list | count }} connected
+          **Routes:** {{ connectivity_count(route_list) }}/{{ route_list | count }} active
+          **Network resources:** {{ connectivity_count(resource_list) }}/{{ resource_list | count }} active
+
+          ## Peers ({{ peer_list | count }})
+
+          {% if peer_list | count == 0 -%}
+          _No peers found._
+          {%- else -%}
+          | Name | Status | IP | Details |
+          | --- | :---: | --- | --- |
+          {{ render_rows(peer_list, true) }}
+          {%- endif %}
+
+          ## Routes ({{ route_list | count }})
+
+          {% if route_list | count == 0 -%}
+          _No routes found._
+          {%- else -%}
+          | Name | Status | Details |
+          | --- | :---: | --- |
+          {{ render_rows(route_list) }}
+          {%- endif %}
+
+          ## Network resources ({{ resource_list | count }})
+
+          {% if resource_list | count == 0 -%}
+          _No network resources found._
+          {%- else -%}
+          | Name | Status | Details |
+          | --- | :---: | --- |
+          {{ render_rows(resource_list) }}
+          {%- endif %}

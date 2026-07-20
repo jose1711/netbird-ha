@@ -1,0 +1,81 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Service is already configured",
+      "reauth_successful": "Re-authentication was successful"
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication"
+    },
+    "step": {
+      "reauth_confirm": {
+        "data": {
+          "api_key": "API key"
+        },
+        "description": "Your NetBird API access token could not be validated. You can create a fresh Personal Access Token in the NetBird dashboard at {tokens_url}."
+      },
+      "user": {
+        "data": {
+          "api_key": "API key",
+          "url": "API URL"
+        },
+        "description": "This integration monitors your NetBird network, it **DOES NOT** make your Home Assistant accessible via NetBird VPN.\n\nTo authenticate you'll need to create a Personal Access Token in the NetBird dashboard at {tokens_url}.\n\nLeave the API URL as-is if you use NetBird's cloud service. If you run a self-hosted NetBird management server, enter its API URL instead (for example https://api.netbird.example.com)."
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connected": {
+        "name": "Connected"
+      },
+      "ssh_enabled": {
+        "name": "SSH enabled"
+      },
+      "login_expired": {
+        "name": "Login expired"
+      },
+      "approval_required": {
+        "name": "Approval required"
+      },
+      "ephemeral": {
+        "name": "Ephemeral"
+      },
+      "active": {
+        "name": "Active"
+      },
+      "enabled": {
+        "name": "Enabled"
+      }
+    },
+    "sensor": {
+      "ip": {
+        "name": "IP address"
+      },
+      "last_seen": {
+        "name": "Last seen"
+      },
+      "last_login": {
+        "name": "Last login"
+      },
+      "accessible_peers_count": {
+        "name": "Accessible peers"
+      },
+      "destination": {
+        "name": "Destination"
+      },
+      "route_group": {
+        "name": "Route group"
+      },
+      "metric": {
+        "name": "Metric"
+      },
+      "resource_type": {
+        "name": "Type"
+      },
+      "network_name": {
+        "name": "Network"
+      }
+    }
+  }
+}
