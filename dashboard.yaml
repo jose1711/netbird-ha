@@ -90,10 +90,11 @@ views:
           {%- endfor -%}
           {%- set status_icon = '🟢' if status.id and is_state(status.id, 'on') else ('🔴' if status.id else '⚪') -%}
           {%- set warn = ' ⚠️' if problem.any else '' -%}
+          {%- set name_link = '[' + dname + '](/history?entity_id=' + status.id + ')' if status.id else dname -%}
           {%- if show_ip -%}
-          {{ '| ' + dname + warn + ' | ' + status_icon + ' | ' + ip.value + ' | ' + (parts.items | join(', ')) + ' |\n' }}
+          {{ '| ' + name_link + warn + ' | ' + status_icon + ' | ' + ip.value + ' | ' + (parts.items | join(', ')) + ' |\n' }}
           {%- else -%}
-          {{ '| ' + dname + warn + ' | ' + status_icon + ' | ' + (parts.items | join(', ')) + ' |\n' }}
+          {{ '| ' + name_link + warn + ' | ' + status_icon + ' | ' + (parts.items | join(', ')) + ' |\n' }}
           {%- endif -%}
           {%- endfor -%}
           {%- endmacro -%}
