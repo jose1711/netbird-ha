@@ -58,6 +58,9 @@
       "last_login": {
         "name": "Last login"
       },
+      "login_expires_in": {
+        "name": "Login expires in"
+      },
       "accessible_peers_count": {
         "name": "Accessible peers"
       },

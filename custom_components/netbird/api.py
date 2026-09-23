@@ -73,11 +73,13 @@ class NetBirdPeer:
     last_login: datetime | None
     ssh_enabled: bool
     login_expired: bool
+    login_expiration_enabled: bool
     approval_required: bool
     ephemeral: bool
     accessible_peers_count: int
     groups: list[NetBirdGroup] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
+    login_expires_at: datetime | None = field(default=None, init=False)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NetBirdPeer:
@@ -94,6 +96,7 @@ class NetBirdPeer:
             last_login=_parse_timestamp(data.get("last_login")),
             ssh_enabled=data.get("ssh_enabled", False),
             login_expired=data.get("login_expired", False),
+            login_expiration_enabled=data.get("login_expiration_enabled", False),
             approval_required=data.get("approval_required", False),
             ephemeral=data.get("ephemeral", False),
             accessible_peers_count=data.get("accessible_peers_count", 0),
@@ -233,11 +236,21 @@ class NetBirdAccount:
 
     id: str
     domain: str
+    peer_login_expiration_enabled: bool
+    peer_login_expiration: int
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NetBirdAccount:
         """Build an account from the API response."""
-        return cls(id=data["id"], domain=data.get("domain", ""))
+        settings = data.get("settings") or {}
+        return cls(
+            id=data["id"],
+            domain=data.get("domain", ""),
+            peer_login_expiration_enabled=settings.get(
+                "peer_login_expiration_enabled", False
+            ),
+            peer_login_expiration=settings.get("peer_login_expiration", 0),
+        )
 
 
 @dataclass

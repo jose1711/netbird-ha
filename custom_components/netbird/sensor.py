@@ -13,9 +13,10 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .api import NetBirdNetworkResource, NetBirdPeer, NetBirdRoute
 from .coordinator import NetBirdConfigEntry
@@ -28,7 +29,15 @@ PARALLEL_UPDATES = 0
 class NetBirdPeerSensorEntityDescription(SensorEntityDescription):
     """Describes a NetBird peer sensor entity."""
 
-    value_fn: Callable[[NetBirdPeer], datetime | str | int | None]
+    value_fn: Callable[[NetBirdPeer], datetime | str | int | float | None]
+
+
+def _login_expires_in_seconds(peer: NetBirdPeer) -> float | None:
+    """Return seconds remaining until the peer's login expires."""
+    if peer.login_expires_at is None:
+        return None
+    remaining = peer.login_expires_at - dt_util.utcnow()
+    return max(remaining.total_seconds(), 0)
 
 
 PEER_SENSORS: tuple[NetBirdPeerSensorEntityDescription, ...] = (
@@ -50,6 +59,16 @@ PEER_SENSORS: tuple[NetBirdPeerSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda peer: peer.last_login,
+    ),
+    NetBirdPeerSensorEntityDescription(
+        key="login_expires_in",
+        translation_key="login_expires_in",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_display_precision=0,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_login_expires_in_seconds,
     ),
     NetBirdPeerSensorEntityDescription(
         key="accessible_peers_count",
@@ -159,7 +178,7 @@ class NetBirdPeerSensorEntity(NetBirdPeerEntity, SensorEntity):
 
     @property
     @override
-    def native_value(self) -> datetime | str | int | None:
+    def native_value(self) -> datetime | str | int | float | None:
         """Return the state of the sensor."""
         peer = self.coordinator.data.peers[self.peer_id]
         return self.entity_description.value_fn(peer)

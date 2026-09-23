@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import override
 
 from homeassistant.config_entries import ConfigEntry
@@ -50,8 +51,16 @@ class NetBirdDataUpdateCoordinator(DataUpdateCoordinator[NetBirdData]):
             peers = await self.client.get_peers()
             routes = await self.client.get_routes()
             resources, routers = await self.client.get_routing_data()
+            account = await self.client.get_account()
         except NetBirdAuthenticationError as err:
             raise ConfigEntryAuthFailed from err
+
+        if account.peer_login_expiration_enabled:
+            for peer in peers.values():
+                if peer.login_expiration_enabled and peer.last_login:
+                    peer.login_expires_at = peer.last_login + timedelta(
+                        seconds=account.peer_login_expiration
+                    )
 
         if not self._accessible_peers_initialized:
             try:
